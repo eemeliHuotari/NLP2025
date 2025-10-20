@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Exercise 4 — Run multiple pywsd algorithms over MSH-WSD and report accuracy
 
