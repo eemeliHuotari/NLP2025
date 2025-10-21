@@ -98,7 +98,8 @@ def submit_text():
     # POS tag and lemmatize
     pos_tags = nltk.pos_tag(without_stop_punct)
     lemmatized = [
-        LEMMATIZER.lemmatize(token, get_wordnet_pos(pos)) for token, pos in pos_tags
+        LEMMATIZER.lemmatize(token.lower(), get_wordnet_pos(pos))
+        for token, pos in pos_tags
     ]
 
     # set combobox values to lemmatized words
@@ -117,13 +118,6 @@ def submit_text():
 
 
 def disambiguate():
-    if not input_sentence:
-        show_message("No sentence submitted.")
-        return
-    if not target_word:
-        show_message("No word selected.")
-        return
-
     start_time = time.time()
 
     lesk_original = original_lesk(input_sentence, target_word)
@@ -157,29 +151,36 @@ def disambiguate():
     )
 
     time_taken = time.time() - start_time
-
-    output = [
-        f"Target word: {target_word}",
-        "Original Lesk:\n" + format_synset(lesk_original),
-        "Adapted Lesk:\n" + format_synset(lesk_adapted),
-        "Simple Lesk:\n" + format_synset(lesk_simple),
-        "Simple Lesk + Hypo:\n" + format_synset(lesk_simple_hypo),
-        "Cosine Lesk:\n" + format_synset(lesk_cosine),
-        "========================================================================================================================",
-        "Path Similarity:\n" + format_synset(path_sims[0]),
-        "WUP Similarity:\n" + format_synset(path_sims[1]),
-        "LCH Similarity:\n" + format_synset(path_sims[2]),
-        "========================================================================================================================",
-        "IC RES Similarity:\n" + format_synset(ic_sims[0]),
-        "IC JCN Similarity:\n" + format_synset(ic_sims[1]),
-        "IC LIN Similarity:\n" + format_synset(ic_sims[2]),
-        "========================================================================================================================",
-        "Random Sense:\n" + format_synset(random_sense(target_word)),
-        "First Sense:\n" + format_synset(first_sense(target_word)),
-        "Highest Lemma Count:\n" + format_synset(max_lemma_count(target_word)),
-        "========================================================================================================================",
-        "WUP + Phonetic Similarity:\n" + format_synset(best_syn),
-    ]
+    if len(wn.synsets(target_word)) == 0:
+        output = ["Can't find word from WordNet!"]
+        results_text.config(state="normal")
+        results_text.delete("1.0", "end")
+        results_text.insert("1.0", "\n".join(output))
+        results_text.config(state="disabled")
+        return
+    else:
+        output = [
+            f"Target word: {target_word}",
+            "Original Lesk:\n" + format_synset(lesk_original),
+            "Adapted Lesk:\n" + format_synset(lesk_adapted),
+            "Simple Lesk:\n" + format_synset(lesk_simple),
+            "Simple Lesk + Hypo:\n" + format_synset(lesk_simple_hypo),
+            "Cosine Lesk:\n" + format_synset(lesk_cosine),
+            "========================================================================================================================",
+            "Path Similarity:\n" + format_synset(path_sims[0]),
+            "WUP Similarity:\n" + format_synset(path_sims[1]),
+            "LCH Similarity:\n" + format_synset(path_sims[2]),
+            "========================================================================================================================",
+            "IC RES Similarity:\n" + format_synset(ic_sims[0]),
+            "IC JCN Similarity:\n" + format_synset(ic_sims[1]),
+            "IC LIN Similarity:\n" + format_synset(ic_sims[2]),
+            "========================================================================================================================",
+            "Random Sense:\n" + format_synset(random_sense(target_word)),
+            "First Sense:\n" + format_synset(first_sense(target_word)),
+            "Highest Lemma Count:\n" + format_synset(max_lemma_count(target_word)),
+            "========================================================================================================================",
+            "WUP + Phonetic Similarity:\n" + format_synset(best_syn),
+        ]
 
     results_text.config(state="normal")
     results_text.delete("1.0", "end")
@@ -189,7 +190,7 @@ def disambiguate():
     process_text_disambiguation.config(state="normal")
     process_text_disambiguation.delete("1.0", "end")
     synsets = wn.synsets(target_word)
-    lemmas = []
+
     pos_counts = {"n": 0, "a": 0, "v": 0, "s": 0, "r": 0}
     lemmas = []
     for syn in synsets:
