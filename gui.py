@@ -15,17 +15,25 @@ from nltk.corpus import wordnet as wn
 from pywsd.lesk import original_lesk, adapted_lesk, simple_lesk, cosine_lesk
 from pywsd.baseline import random_sense, first_sense, max_lemma_count
 from Exercise_3 import run_path_sim, try_pyswd_ic, ic_similarity_fallback
-
+from exc6 import wup_phonetic_best_synset
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
+
+# prepare stopwords set
+STOPWORDS = set(stopwords.words("english"))
+LEMMATIZER = WordNetLemmatizer()
 
 input_sentence = ""
 tokens = []
 target_word = ""
 
-# prepare stopwords set
-STOPWORDS = set(stopwords.words("english"))
-LEMMATIZER = WordNetLemmatizer()
+pos_map = {
+    "n": "Noun",
+    "v": "Verb",
+    "a": "Adjective",
+    "s": "Adjective (satellite)",
+    "r": "Adverb",
+}
 
 
 def get_wordnet_pos(treebank_tag):
@@ -46,7 +54,7 @@ def format_synset(syn):
     if syn is None:
         return "None"
     try:
-        return f"{syn.name()} - {syn.pos()} - {syn.definition()}"
+        return f"{syn.name().split(".")[0]} - {pos_map[syn.pos()]} - {syn.definition()}"
     except Exception:
         return str(syn)
 
@@ -135,9 +143,18 @@ def disambiguate():
             ic_sims.append(val)
         else:
             _, best_target = ic_similarity_fallback(
-                target_word, input_sentence, which=measure, target_pos="n"
+                target_word,
+                input_sentence,
+                which=measure,
+                target_pos="n",
             )
             ic_sims.append(best_target)
+
+    (_, _, _, best_syn), _ = wup_phonetic_best_synset(
+        target_word,
+        input_sentence,
+        alpha=0.5,
+    )
 
     time_taken = time.time() - start_time
 
@@ -160,6 +177,8 @@ def disambiguate():
         "Random Sense:\n" + format_synset(random_sense(target_word)),
         "First Sense:\n" + format_synset(first_sense(target_word)),
         "Highest Lemma Count:\n" + format_synset(max_lemma_count(target_word)),
+        "========================================================================================================================",
+        "WUP + Phonetic Similarity:\n" + format_synset(best_syn),
     ]
 
     results_text.config(state="normal")
@@ -178,14 +197,6 @@ def disambiguate():
         pos_counts[syn.pos()] += 1
 
     nonzero_pos_counts = {k: v for k, v in pos_counts.items() if v != 0}
-
-    pos_map = {
-        "n": "Noun",
-        "v": "Verb",
-        "a": "Adjective",
-        "s": "Adjective (satellite)",
-        "r": "Adverb",
-    }
 
     formatted_pos_lines = []
     # keep a sensible order
