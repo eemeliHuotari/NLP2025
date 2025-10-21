@@ -43,13 +43,6 @@ def synset_str(ss):
     return f"{ss.name()} :: {ss.definition()}"
 
 
-def safe_original_lesk(sentence, target):
-    try:
-        return original_lesk(sentence, target, pos="n")
-    except TypeError:
-        return original_lesk(sentence, target)
-
-
 def safe_adapted_lesk(sentence, target):
     try:
         return adapted_lesk(sentence, target, pos="n")
@@ -57,7 +50,7 @@ def safe_adapted_lesk(sentence, target):
         return adapted_lesk(sentence, target)
 
 
-def run_path_sim(target, sent, measure, pos="n"):
+def run_path_sim(target, sent, measure, pos):
     try:
         return max_similarity(target, sent, measure, pos=pos)
     except TypeError:
@@ -106,7 +99,7 @@ def max_pairwise(sim_fn, cands, ctx):
     return best_val, best_pair
 
 
-def ic_similarity_fallback(target, sentence, which="lin", target_pos="n"):
+def ic_similarity(target, sentence, which="lin", target_pos="n"):
     pos_map = {"n": wn.NOUN, "v": wn.VERB, "a": wn.ADJ, "r": wn.ADV}
     pos = pos_map[target_pos]
     target_syns = wn.synsets(target, pos=pos)
@@ -137,7 +130,7 @@ print()
 
 # 1) Lesk family
 print("== Lesk-family WSD ==")
-print("Original Lesk               :", synset_str(safe_original_lesk(sent, target)))
+print("Original Lesk               :", synset_str(original_lesk(sent, target)))
 print("Adapted/Extended Lesk       :", synset_str(safe_adapted_lesk(sent, target)))
 print("Simple Lesk                 :", synset_str(simple_lesk(sent, target, pos="n")))
 print(
@@ -167,33 +160,19 @@ print()
 print("== Information-content similarity ==")
 
 
-def try_pyswd_ic(measure, target, sent):
+def try_pyswd_ic(measure, target, sent, pos):
     try:
-        return max_similarity(target, sent, measure, pos="n")
-    except TypeError:
-        try:
-            return max_similarity(
-                target, sent, measure, pos="n", ic=wordnet_ic.ic("ic-brown.dat")
-            )
-        except TypeError:
-            try:
-                return max_similarity(
-                    target, sent, measure, pos="n", IC=wordnet_ic.ic("ic-brown.dat")
-                )
-            except Exception:
-                return None
+        return max_similarity(target, sent, measure, pos=pos)
     except Exception:
         return None
 
 
 for measure in ["res", "jcn", "lin"]:
-    val = try_pyswd_ic(measure, target, sent)
+    val = try_pyswd_ic(measure, target, sent, pos="N")
     if val is not None:
         print(f"MaxSim ({measure})            :", val, "(pywsd)")
     else:
-        score, best_target = ic_similarity_fallback(
-            target, sent, which=measure, target_pos="n"
-        )
+        score, best_target = ic_similarity(target, sent, which=measure, target_pos="n")
         print(f"MaxSim ({measure})            :", score, "(fallback via NLTK)")
         if best_target:
             print(
@@ -207,9 +186,6 @@ print("== Baselines ==")
 print("Random Sense                 :", synset_str(random_sense(target, pos="n")))
 print("First Sense                  :", synset_str(first_sense(target, pos="n")))
 
-try:
-    res = max_lemma_count(target, pos="n")
-except TypeError:
-    res = max_lemma_count(target)
+res = max_lemma_count(target)
 
 print("Highest Lemma Count          :", synset_str(res))

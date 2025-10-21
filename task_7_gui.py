@@ -14,8 +14,8 @@ nltk.download("omw-1.4", quiet=True)
 from nltk.corpus import wordnet as wn
 from pywsd.lesk import original_lesk, adapted_lesk, simple_lesk, cosine_lesk
 from pywsd.baseline import random_sense, first_sense, max_lemma_count
-from Exercise_3 import run_path_sim, try_pyswd_ic, ic_similarity_fallback
-from exc6 import wup_phonetic_best_synset
+from task_3 import run_path_sim, ic_similarity
+from task_6 import wup_phonetic_best_synset
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 
@@ -65,10 +65,10 @@ def show_process(original, without_stop_punct, lemmatized):
     lines = [
         "Original sentence:",
         original,
-        "",
+        "================================================================================",
         "After removing stopwords and punctuation:",
         " ".join(without_stop_punct) if without_stop_punct else "(none)",
-        "",
+        "================================================================================",
         "Lemmatized words (shown in dropdown <-):",
         " ".join(lemmatized) if lemmatized else "(none)",
     ]
@@ -126,29 +126,35 @@ def disambiguate():
     lesk_simple_hypo = simple_lesk(input_sentence, target_word, hyperhypo=True)
     lesk_cosine = cosine_lesk(input_sentence, target_word)
 
+    lesk_time = time.time() - start_time
+    path_start = time.time()
+
     path_sims = []
     for measure in ["path", "wup", "lch"]:
-        path_sims.append(run_path_sim(target_word, input_sentence, measure, pos="n"))
+        path_sims.append(run_path_sim(target_word, input_sentence, measure, pos=None))
+
+    path_time = time.time() - path_start
+    ic_start = time.time()
 
     ic_sims = []
     for measure in ["res", "jcn", "lin"]:
-        val = try_pyswd_ic(measure, target_word, input_sentence)
-        if val is not None:
-            ic_sims.append(val)
-        else:
-            _, best_target = ic_similarity_fallback(
-                target_word,
-                input_sentence,
-                which=measure,
-                target_pos="n",
-            )
-            ic_sims.append(best_target)
+        _, best_target = ic_similarity(
+            target_word,
+            input_sentence,
+            which=measure,
+            target_pos="n",
+        )
+        ic_sims.append(best_target)
+
+    ic_time = time.time() - ic_start
+    wup_p_start = time.time()
 
     (_, _, _, best_syn), _ = wup_phonetic_best_synset(
         target_word,
         input_sentence,
         alpha=0.5,
     )
+    wup_p_time = time.time() - wup_p_start
 
     time_taken = time.time() - start_time
     if len(wn.synsets(target_word)) == 0:
@@ -211,7 +217,13 @@ def disambiguate():
         f"Possible lemmas: {len(lemmas)}",
         f"POS-tags of possible lemmas:",
         "\n".join(formatted_pos_lines),
-        f"Processing time: {time_taken:.4f} s",
+        "================================================================================",
+        f"Lesk processing time: {lesk_time:.4f} s",
+        f"Path processing time: {path_time:.4f} s",
+        f"IC processing time: {ic_time:.4f} s",
+        f"WUP+Phonetic processing time: {wup_p_time:.4f} s",
+        "================================================================================",
+        f"Total processing time: {time_taken:.4f} s",
     ]
     process_text_disambiguation.insert("1.0", "\n".join(disambiguation_process_output))
     process_text_disambiguation.config(state="disabled")
