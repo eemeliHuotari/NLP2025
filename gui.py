@@ -2,10 +2,7 @@ import string
 import tkinter as tk
 from tkinter import ttk
 import nltk
-
-from pywsd.lesk import original_lesk, adapted_lesk, simple_lesk, cosine_lesk
-from pywsd.baseline import random_sense, first_sense, max_lemma_count
-from Exercise_3 import run_path_sim, try_pyswd_ic, ic_similarity_fallback
+import time
 
 # ensure required NLTK data is present
 nltk.download("punkt", quiet=True)
@@ -13,6 +10,11 @@ nltk.download("wordnet", quiet=True)
 nltk.download("stopwords", quiet=True)
 nltk.download("averaged_perceptron_tagger", quiet=True)
 nltk.download("omw-1.4", quiet=True)
+
+from nltk.corpus import wordnet as wn
+from pywsd.lesk import original_lesk, adapted_lesk, simple_lesk, cosine_lesk
+from pywsd.baseline import random_sense, first_sense, max_lemma_count
+from Exercise_3 import run_path_sim, try_pyswd_ic, ic_similarity_fallback
 
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
@@ -44,7 +46,7 @@ def format_synset(syn):
     if syn is None:
         return "None"
     try:
-        return f"{syn.name()} — {syn.definition()}"
+        return f"{syn.name()} - {syn.pos()} - {syn.definition()}"
     except Exception:
         return str(syn)
 
@@ -114,6 +116,8 @@ def disambiguate():
         show_message("No word selected.")
         return
 
+    start_time = time.time()
+
     lesk_original = original_lesk(input_sentence, target_word)
     lesk_adapted = adapted_lesk(input_sentence, target_word)
     lesk_simple = simple_lesk(input_sentence, target_word)
@@ -134,6 +138,8 @@ def disambiguate():
                 target_word, input_sentence, which=measure, target_pos="n"
             )
             ic_sims.append(best_target)
+
+    time_taken = time.time() - start_time
 
     output = [
         f"Target word: {target_word}",
@@ -161,6 +167,43 @@ def disambiguate():
     results_text.insert("1.0", "\n".join(output))
     results_text.config(state="disabled")
 
+    process_text_disambiguation.config(state="normal")
+    process_text_disambiguation.delete("1.0", "end")
+    synsets = wn.synsets(target_word)
+    lemmas = []
+    pos_counts = {"n": 0, "a": 0, "v": 0, "s": 0, "r": 0}
+    lemmas = []
+    for syn in synsets:
+        lemmas.append(syn.lemmas())
+        pos_counts[syn.pos()] += 1
+
+    nonzero_pos_counts = {k: v for k, v in pos_counts.items() if v != 0}
+
+    pos_map = {
+        "n": "Noun",
+        "v": "Verb",
+        "a": "Adjective",
+        "s": "Adjective (satellite)",
+        "r": "Adverb",
+    }
+
+    formatted_pos_lines = []
+    # keep a sensible order
+    for key in ["n", "v", "a", "s", "r"]:
+        if key in nonzero_pos_counts:
+            formatted_pos_lines.append(
+                f"{pos_map.get(key, key)}: {nonzero_pos_counts[key]}"
+            )
+
+    disambiguation_process_output = [
+        f"Possible lemmas: {len(lemmas)}",
+        f"POS-tags of possible lemmas:",
+        "\n".join(formatted_pos_lines),
+        f"Processing time: {time_taken:.4f} s",
+    ]
+    process_text_disambiguation.insert("1.0", "\n".join(disambiguation_process_output))
+    process_text_disambiguation.config(state="disabled")
+
 
 def show_message(msg):
     results_text.config(state="normal")
@@ -185,6 +228,7 @@ def clear_all():
     process_text.config(state="disabled")
     word_selection_combo["values"] = []
     word_selection_combo.set("")
+    sentence_input_field.focus()
 
 
 if __name__ == "__main__":
@@ -260,7 +304,7 @@ if __name__ == "__main__":
     # result display
     results_text = tk.Text(
         main_frame,
-        height=40,
+        height=41,
         width=120,
         state="disabled",
         wrap="word",
@@ -271,13 +315,13 @@ if __name__ == "__main__":
     )
     results_text.grid(row=4, column=0, sticky="w", pady=(8, 0))
 
-    # right: process display
+    # process display
     process_frame = tk.Frame(root, bg=root["bg"])
     process_frame.grid(row=0, column=1, sticky="ne", padx=10, pady=10)
 
     process_label = tk.Label(
         process_frame,
-        text="Process",
+        text="Preprocessing steps:",
         fg="white",
         bg=root["bg"],
     )
@@ -285,7 +329,7 @@ if __name__ == "__main__":
 
     process_text = tk.Text(
         process_frame,
-        height=51,
+        height=20,
         width=80,
         state="disabled",
         wrap="word",
@@ -295,6 +339,27 @@ if __name__ == "__main__":
         insertbackground="black",
     )
     process_text.grid(row=1, column=0, sticky="w")
+
+    process_label_disambiguation = tk.Label(
+        process_frame,
+        text="Disambiguation steps:",
+        fg="white",
+        bg=root["bg"],
+    )
+    process_label_disambiguation.grid(row=2, column=0, sticky="w", pady=(7, 0))
+
+    process_text_disambiguation = tk.Text(
+        process_frame,
+        height=30,
+        width=80,
+        state="disabled",
+        wrap="word",
+        border=1,
+        bg="white",
+        fg="black",
+        insertbackground="black",
+    )
+    process_text_disambiguation.grid(row=3, column=0, sticky="w")
 
     root.bind("<Escape>", lambda event: root.destroy())
 
