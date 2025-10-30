@@ -59,7 +59,7 @@ def format_synset(syn):
         return str(syn)
 
 
-def show_process(original, without_stop_punct, lemmatized):
+def show_process(original, without_stop_punct, tokens):
     process_text.config(state="normal")
     process_text.delete("1.0", "end")
     lines = [
@@ -70,14 +70,14 @@ def show_process(original, without_stop_punct, lemmatized):
         " ".join(without_stop_punct) if without_stop_punct else "(none)",
         "================================================================================",
         "Lemmatized words (shown in dropdown <-):",
-        " ".join(lemmatized) if lemmatized else "(none)",
+        " ".join(tokens) if tokens else "(none)",
     ]
     process_text.insert("1.0", "\n".join(lines))
     process_text.config(state="disabled")
 
 
 def submit_text():
-    global input_sentence, tokens, target_word
+    global input_sentence, tokens, target_word, lemmatized
     input_sentence = sentence_input_field.get("1.0", "end-1c").strip()
     if not input_sentence:
         word_selection_combo["values"] = []
@@ -98,12 +98,19 @@ def submit_text():
     # POS tag and lemmatize
     pos_tags = nltk.pos_tag(without_stop_punct)
     lemmatized = [
-        LEMMATIZER.lemmatize(token.lower(), get_wordnet_pos(pos))
+        [
+            LEMMATIZER.lemmatize(token.lower(), get_wordnet_pos(pos)),
+            get_wordnet_pos(pos),
+        ]
         for token, pos in pos_tags
     ]
-    tokens = lemmatized
+    print(lemmatized)
+    tokens = []
+    for t in lemmatized:
+        tokens.append(t[0])
 
     # set combobox values to lemmatized words
+
     word_selection_combo["values"] = tokens
     word_selection_combo.set("")
     target_word = ""
@@ -114,39 +121,49 @@ def submit_text():
     results_text.config(state="disabled")
 
     # show process on the right side
-    show_process(input_sentence, without_stop_punct, lemmatized)
+    show_process(input_sentence, without_stop_punct, tokens)
 
 
 def disambiguate():
+    target_word_pos = ""
+    for i in range(len(lemmatized)):
+        if target_word in lemmatized[i]:
+            target_word_pos = lemmatized[i][1]
     start_time = time.time()
 
+    print(target_word_pos, target_word)
+
     lesk_original = original_lesk(input_sentence, target_word)
-    lesk_adapted = adapted_lesk(input_sentence, target_word)
-    lesk_simple = simple_lesk(input_sentence, target_word)
-    lesk_simple_hypo = simple_lesk(input_sentence, target_word, hyperhypo=True)
-    lesk_cosine = cosine_lesk(input_sentence, target_word)
+    lesk_adapted = adapted_lesk(input_sentence, target_word, pos=target_word_pos)
+    lesk_simple = simple_lesk(input_sentence, target_word, pos=target_word_pos)
+    lesk_simple_hypo = simple_lesk(
+        input_sentence, target_word, pos=target_word_pos, hyperhypo=True
+    )
+    lesk_cosine = cosine_lesk(input_sentence, target_word, pos=target_word_pos)
 
     lesk_time = time.time() - start_time
     path_start = time.time()
 
     path_sims = []
     for measure in ["path", "wup", "lch"]:
-        path_sims.append(max_similarity(input_sentence, target_word, measure))
+        path_sims.append(
+            max_similarity(input_sentence, target_word, measure, pos=target_word_pos)
+        )
 
     path_time = time.time() - path_start
     ic_start = time.time()
 
     ic_sims = []
     for measure in ["res", "jcn", "lin"]:
-        ic_sims.append(max_similarity(input_sentence, target_word, measure))
+        ic_sims.append(
+            max_similarity(input_sentence, target_word, measure, pos=target_word_pos)
+        )
 
     ic_time = time.time() - ic_start
     wup_p_start = time.time()
 
     (_, _, _, best_syn), _ = wup_phonetic_best_synset(
-        target_word,
-        input_sentence,
-        alpha=0.5,
+        target_word, input_sentence, alpha=0.5, pos=target_word_pos
     )
     wup_p_time = time.time() - wup_p_start
 

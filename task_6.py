@@ -257,7 +257,9 @@ def _avg_phonetic(candidate_syn, ctx_words):
     return sum(vals) / len(vals) if vals else 0.0
 
 
-def wup_phonetic_best_synset(target_word: str, sentence: str, alpha: float = 0.5):
+def wup_phonetic_best_synset(
+    target_word: str, sentence: str, alpha: float = 0.5, pos="n"
+):
     """
     Return (best_score, best_synset, scored_list) where
       score = alpha * avg_wup + (1-alpha) * avg_phonetic
@@ -265,8 +267,8 @@ def wup_phonetic_best_synset(target_word: str, sentence: str, alpha: float = 0.5
     tokens = word_tokenize(sentence)
     ctx_words = _content_words(tokens)
     ctx_syns = _best_context_synsets(tokens)
-    cand_syns = wn.synsets(target_word, pos="n") or wn.synsets(
-        re.sub(r"s$", "", target_word), pos="n"
+    cand_syns = wn.synsets(target_word, pos) or wn.synsets(
+        re.sub(r"s$", "", target_word), pos
     )
     scored = []
     for syn in cand_syns:
