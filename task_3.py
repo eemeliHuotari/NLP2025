@@ -50,12 +50,12 @@ def safe_adapted_lesk(sentence, target):
         return adapted_lesk(sentence, target)
 
 
-def run_path_sim(target, sent, measure, pos):
+def run_path_sim(sent, target, measure, pos):
     try:
-        return max_similarity(target, sent, measure, pos=pos)
+        return max_similarity(sent, target, measure, pos=pos)
     except TypeError:
         try:
-            return max_similarity(target, sent, measure)
+            return max_similarity(sent, target, measure)
         except Exception:
             return None
 
@@ -151,7 +151,7 @@ print()
 # 2) Path-based semantic similarity
 print("== Path-based similarity (max_similarity) ==")
 for measure in ["path", "wup", "lch"]:
-    val = run_path_sim(target, sent, measure, pos="n")
+    val = run_path_sim(sent, target, measure, pos="n")
     print(f"MaxSim ({measure})            :", val)
 
 print()
@@ -162,7 +162,7 @@ print("== Information-content similarity ==")
 
 def try_pyswd_ic(measure, target, sent, pos):
     try:
-        return max_similarity(target, sent, measure, pos=pos)
+        return max_similarity(sent, target, measure, pos=pos)
     except Exception:
         return None
 

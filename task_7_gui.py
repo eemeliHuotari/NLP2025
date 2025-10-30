@@ -14,7 +14,7 @@ nltk.download("omw-1.4", quiet=True)
 from nltk.corpus import wordnet as wn
 from pywsd.lesk import original_lesk, adapted_lesk, simple_lesk, cosine_lesk
 from pywsd.baseline import random_sense, first_sense, max_lemma_count
-from task_3 import run_path_sim, ic_similarity
+from pywsd.similarity import max_similarity
 from task_6 import wup_phonetic_best_synset
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
@@ -101,9 +101,9 @@ def submit_text():
         LEMMATIZER.lemmatize(token.lower(), get_wordnet_pos(pos))
         for token, pos in pos_tags
     ]
+    tokens = lemmatized
 
     # set combobox values to lemmatized words
-    tokens = lemmatized
     word_selection_combo["values"] = tokens
     word_selection_combo.set("")
     target_word = ""
@@ -131,20 +131,14 @@ def disambiguate():
 
     path_sims = []
     for measure in ["path", "wup", "lch"]:
-        path_sims.append(run_path_sim(target_word, input_sentence, measure, pos=None))
+        path_sims.append(max_similarity(input_sentence, target_word, measure))
 
     path_time = time.time() - path_start
     ic_start = time.time()
 
     ic_sims = []
     for measure in ["res", "jcn", "lin"]:
-        _, best_target = ic_similarity(
-            target_word,
-            input_sentence,
-            which=measure,
-            target_pos="n",
-        )
-        ic_sims.append(best_target)
+        ic_sims.append(max_similarity(input_sentence, target_word, measure))
 
     ic_time = time.time() - ic_start
     wup_p_start = time.time()
@@ -200,8 +194,9 @@ def disambiguate():
     pos_counts = {"n": 0, "a": 0, "v": 0, "s": 0, "r": 0}
     lemmas = []
     for syn in synsets:
-        lemmas.append(syn.lemmas())
-        pos_counts[syn.pos()] += 1
+        if syn:
+            lemmas.append(syn.lemmas())
+            pos_counts[syn.pos()] += 1
 
     nonzero_pos_counts = {k: v for k, v in pos_counts.items() if v != 0}
 

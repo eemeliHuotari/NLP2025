@@ -11,16 +11,16 @@ Target word: "drug" (or "drugs")
 Usage:
   python exc5.py
 """
-import math
+
 import re
-from collections import defaultdict
 
 # --- NLTK setup ---
 import nltk
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-nltk.download('punkt_tab')
+
+nltk.download("punkt_tab")
 for pkg in ["punkt", "wordnet", "omw-1.4", "stopwords"]:
     try:
         nltk.data.find(f"corpora/{pkg}")
@@ -31,11 +31,8 @@ STOP = set(stopwords.words("english"))
 WUP_FALLBACK = 0.0
 
 # --- fuzzy (Soundex/DMetaphone) + edit distance helpers ---
-try:
-    import fuzzy
-    HAVE_FUZZY = True
-except Exception:
-    HAVE_FUZZY = False
+import fuzzy
+
 
 def simple_soundex(word: str) -> str:
     """Tiny built-in Soundex fallback if `fuzzy` is missing."""
@@ -64,27 +61,26 @@ def simple_soundex(word: str) -> str:
     sdx = (sdx + "000")[:4]
     return sdx
 
+
 def phonetic_codes(word: str):
     """Return a list of phonetic codes (best-first) for a word."""
     w = word.lower()
     if not w:
         return []
     codes = []
-    if HAVE_FUZZY:
-        try:
-            dmeta = fuzzy.DMetaphone()
-            dm = dmeta(w)
-            dm = [c.decode("utf-8") for c in dm if c]
-            codes.extend(dm)
-        except Exception:
-            pass
-        try:
-            sx = fuzzy.Soundex(4)(w)
-            codes.append(sx)
-        except Exception:
-            pass
-    else:
-        codes.append(simple_soundex(w))
+    try:
+        dmeta = fuzzy.DMetaphone()
+        dm = dmeta(w)
+        dm = [c.decode("utf-8") for c in dm if c]
+        codes.extend(dm)
+    except Exception:
+        pass
+    try:
+        sx = fuzzy.Soundex(4)(w)
+        codes.append(sx)
+    except Exception:
+        pass
+
     seen = set()
     uniq = []
     for c in codes:
@@ -92,6 +88,7 @@ def phonetic_codes(word: str):
             uniq.append(c)
             seen.add(c)
     return uniq or [""]
+
 
 def edit_distance(a: str, b: str) -> int:
     """Levenshtein edit distance (iterative DP)."""
@@ -109,6 +106,7 @@ def edit_distance(a: str, b: str) -> int:
             cur.append(min(prev[j] + 1, cur[-1] + 1, prev[j - 1] + cost))
         prev = cur
     return prev[-1]
+
 
 def normalized_phonetic_sim(w1: str, w2: str) -> float:
     """
@@ -130,6 +128,7 @@ def normalized_phonetic_sim(w1: str, w2: str) -> float:
                 best = cand
     return best
 
+
 # --- Part 1: Phonetic distance matrix for a sentence ---
 def phonetic_distance_matrix(sentence: str):
     """
@@ -144,6 +143,7 @@ def phonetic_distance_matrix(sentence: str):
             M[i][j] = round(1.0 - sim, 3)
     return toks, M
 
+
 def pretty_print_matrix(tokens, M):
     width = max(5, max(len(t) for t in tokens) + 1)
     head = " " * (width) + "".join(f"{t:>{width}}" for t in tokens)
@@ -151,9 +151,11 @@ def pretty_print_matrix(tokens, M):
     for t, row in zip(tokens, M):
         print(f"{t:>{width}}" + "".join(f"{v:>{width}.3f}" for v in row))
 
+
 # --- Part 2: Combined Wu-Palmer + Phonetic Lesk scorer ---
 def content_words(tokens):
     return [t for t in tokens if re.search(r"[A-Za-z]", t) and t.lower() not in STOP]
+
 
 def best_context_synsets(tokens):
     """
@@ -162,10 +164,11 @@ def best_context_synsets(tokens):
     """
     ctx = {}
     for w in content_words(tokens):
-        syns = wn.synsets(w, pos='n')
+        syns = wn.synsets(w, pos="n")
         if syns:
             ctx[w] = syns[0]
     return ctx
+
 
 def avg_wup(candidate_syn, ctx_syns):
     if not ctx_syns:
@@ -178,6 +181,7 @@ def avg_wup(candidate_syn, ctx_syns):
             sim = None
         vals.append(sim if sim is not None else WUP_FALLBACK)
     return sum(vals) / len(vals)
+
 
 def avg_phonetic_sim(candidate_syn, ctx_words):
     """
@@ -199,6 +203,7 @@ def avg_phonetic_sim(candidate_syn, ctx_words):
         vals.append(best)
     return sum(vals) / len(vals)
 
+
 def combined_score(candidate_syn, ctx_words, ctx_syns, alpha=0.5):
     """
     convex combination: alpha * wup + (1-alpha) * phonetic_sim
@@ -208,6 +213,7 @@ def combined_score(candidate_syn, ctx_words, ctx_syns, alpha=0.5):
     phn = avg_phonetic_sim(candidate_syn, ctx_words)
     return alpha * wup + (1.0 - alpha) * phn
 
+
 def disambiguate_with_combined(target_word: str, sentence: str, alpha=0.5):
     """
     Score all noun senses of target_word by combined similarity against sentence context.
@@ -215,7 +221,9 @@ def disambiguate_with_combined(target_word: str, sentence: str, alpha=0.5):
     """
     tokens = word_tokenize(sentence)
     ctx_words = content_words(tokens)
-    cand_syns = wn.synsets(target_word, pos='n') or wn.synsets(re.sub(r"s$", "", target_word), pos='n')
+    cand_syns = wn.synsets(target_word, pos="n") or wn.synsets(
+        re.sub(r"s$", "", target_word), pos="n"
+    )
     ctx_syns = best_context_synsets(tokens)
 
     scored = []
@@ -226,6 +234,7 @@ def disambiguate_with_combined(target_word: str, sentence: str, alpha=0.5):
 
     best = scored[0] if scored else (0.0, None)
     return best, scored
+
 
 # --- Demo---
 if __name__ == "__main__":

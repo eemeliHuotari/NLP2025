@@ -43,10 +43,7 @@ def synset_str(ss):
 
 
 def safe_original_lesk(sentence, target):
-    try:
-        return original_lesk(sentence, target, pos="n")
-    except TypeError:
-        return original_lesk(sentence, target)
+    return original_lesk(sentence, target)
 
 
 def safe_adapted_lesk(sentence, target):
@@ -58,10 +55,10 @@ def safe_adapted_lesk(sentence, target):
 
 def run_path_sim(target, sent, measure, pos="n"):
     try:
-        return max_similarity(target, sent, measure, pos=pos)
+        return max_similarity(sent, target, measure, pos=pos)
     except TypeError:
         try:
-            return max_similarity(target, sent, measure)
+            return max_similarity(sent, target, measure)
         except Exception:
             return None
 
@@ -130,12 +127,7 @@ from nltk.corpus import stopwords
 
 STOP = set(stopwords.words("english"))
 
-try:
-    import fuzzy
-
-    _HAVE_FUZZY = True
-except Exception:
-    _HAVE_FUZZY = False
+import fuzzy
 
 
 def _simple_soundex(word: str) -> str:
@@ -169,20 +161,19 @@ def _phonetic_codes(word: str):
     if not w:
         return [""]
     codes = []
-    if _HAVE_FUZZY:
-        try:
-            dmeta = fuzzy.DMetaphone()
-            dm = dmeta(w)
-            dm = [c.decode("utf-8") for c in dm if c]
-            codes.extend(dm)
-        except Exception:
-            pass
-        try:
-            sx = fuzzy.Soundex(4)(w)
-            if sx:
-                codes.append(sx)
-        except Exception:
-            pass
+    try:
+        dmeta = fuzzy.DMetaphone()
+        dm = dmeta(w)
+        dm = [c.decode("utf-8") for c in dm if c]
+        codes.extend(dm)
+    except Exception:
+        pass
+    try:
+        sx = fuzzy.Soundex(4)(w)
+        if sx:
+            codes.append(sx)
+    except Exception:
+        pass
     if not codes:
         codes.append(_simple_soundex(w))
     seen = set()
@@ -328,13 +319,13 @@ print("== Information-content similarity ==")
 
 def try_pyswd_ic(measure):
     try:
-        return max_similarity(target, sent, measure, pos="n")
+        return max_similarity(sent, target, measure, pos="n")
     except TypeError:
         try:
-            return max_similarity(target, sent, measure, pos="n")
+            return max_similarity(sent, target, measure, pos="n")
         except TypeError:
             try:
-                return max_similarity(target, sent, measure, pos="n")
+                return max_similarity(sent, target, measure, pos="n")
             except Exception:
                 return None
     except Exception:
