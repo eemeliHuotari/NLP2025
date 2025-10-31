@@ -1,11 +1,11 @@
 """
-Exercise 4 — Run multiple pywsd algorithms over MSH-WSD and report accuracy
+Run multiple pywsd algorithms over MSH-WSD and report accuracy
 
 Usage:
-  python msh_eval_pyswd.py --msh_dir "C:\\...\\MSHCorpus" --cui_gloss_json "C:\\...\\mesh_gloss.json"
+  python task_4.py --msh_dir "C:\\...\\MSHCorpus" --cui_gloss_json "C:\\...\\mesh_gloss.json"
 
 (Optionally limit to a 10+10 subset)
-  python msh_eval_pyswd.py --msh_dir ... --cui_gloss_json ... --subset_10_10
+  python task_4.py --msh_dir ... --cui_gloss_json ... --subset_10_10
 """
 
 import argparse, sys, re, json, random, csv, io
