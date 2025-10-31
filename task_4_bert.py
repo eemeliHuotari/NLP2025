@@ -5,7 +5,7 @@ BioBERT WSD on MSH-WSD: sentence-context embedding vs synset-gloss embedding.
 Outputs: eval_ex4/results_BioBERT.csv and predictions_BioBERT.jsonl
 
 Usage:
-  python biobert_eval_msh.py --msh_dir "C:\\...\\MSHCorpus" --cui_gloss_json "C:\\...\\mesh_gloss_filled_subset.json" [--subset_10_10] [--model dmis-lab/biobert-v1.1]
+  python task_4_bert.py --msh_dir "C:\\...\\MSHCorpus" --cui_gloss_json "C:\\...\\mesh_gloss_filled_subset.json" [--subset_10_10] [--model dmis-lab/biobert-v1.1]
 """
 
 import argparse, json, io, re, random, csv, sys
