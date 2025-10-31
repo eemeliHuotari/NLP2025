@@ -3,10 +3,10 @@ Load and evaluate the MSH-WSD corpus.
 
 
 Usage
-  python msh_loader_and_eval.py --msh_dir "C:\\path\\to\\MSHCorpus"
+  python task_2.py --msh_dir "C:\\path\\to\\MSHCorpus"
 
   # with MeSH-Lesk (if you have CUI → definition text):
-  python msh_loader_and_eval.py --msh_dir "C:\\path\\to\\MSHCorpus" --cui_gloss_json mesh_gloss.json
+  python task_2.py --msh_dir "C:\\path\\to\\MSHCorpus" --cui_gloss_json mesh_gloss.json
 """
 import argparse
 import os
