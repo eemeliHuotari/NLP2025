@@ -21,6 +21,8 @@ from task_6 import wup_phonetic_best_synset
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 
+from biobert_test import biobert_wsd_sentence, load_model
+
 # prepare stopwords set
 STOPWORDS = set(stopwords.words("english"))
 LEMMATIZER = WordNetLemmatizer()
@@ -167,6 +169,20 @@ def disambiguate():
     )
     wup_p_time = time.time() - wup_p_start
 
+    bert_time_start = time.time()
+    tokenizer, model, device = load_model()
+    bio_bert = biobert_wsd_sentence(
+        input_sentence,
+        target_word,
+        tokenizer,
+        model,
+        device,
+        pos=target_word_pos,
+        topk=1,
+    )
+
+    bert_time = time.time() - bert_time_start
+
     time_taken = time.time() - start_time
     if len(wn.synsets(target_word)) == 0:
         output = ["Can't find word from WordNet!"]
@@ -197,6 +213,8 @@ def disambiguate():
             "Highest Lemma Count:\n" + format_synset(max_lemma_count(target_word)),
             "========================================================================================================================",
             "WUP + Phonetic Similarity:\n" + format_synset(best_syn),
+            "========================================================================================================================",
+            "BioBERT: " + format_synset(bio_bert[1][1]),
         ]
 
     results_text.config(state="normal")
@@ -233,7 +251,9 @@ def disambiguate():
         f"Lesk processing time: {lesk_time:.4f} s",
         f"Path processing time: {path_time:.4f} s",
         f"IC processing time: {ic_time:.4f} s",
+        "================================================================================",
         f"WUP+Phonetic processing time: {wup_p_time:.4f} s",
+        f"BioBERT processing time: {bert_time:.4f}",
         "================================================================================",
         f"Total processing time: {time_taken:.4f} s",
     ]
