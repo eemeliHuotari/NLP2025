@@ -6,9 +6,11 @@ import time
 
 # ensure required NLTK data is present
 nltk.download("punkt", quiet=True)
+nltk.download("punkt_tab", quiet=True)
 nltk.download("wordnet", quiet=True)
 nltk.download("stopwords", quiet=True)
 nltk.download("averaged_perceptron_tagger", quiet=True)
+nltk.download("averaged_perceptron_tagger_eng", quiet=True)
 nltk.download("omw-1.4", quiet=True)
 
 from nltk.corpus import wordnet as wn
@@ -130,8 +132,6 @@ def disambiguate():
         if target_word in lemmatized[i]:
             target_word_pos = lemmatized[i][1]
     start_time = time.time()
-
-    print(target_word_pos, target_word)
 
     lesk_original = original_lesk(input_sentence, target_word)
     lesk_adapted = adapted_lesk(input_sentence, target_word, pos=target_word_pos)
