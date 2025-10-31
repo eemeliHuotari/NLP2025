@@ -106,7 +106,7 @@ def submit_text():
         ]
         for token, pos in pos_tags
     ]
-    print(lemmatized)
+
     tokens = []
     for t in lemmatized:
         tokens.append(t[0])
@@ -262,6 +262,9 @@ def clear_all():
     process_text.config(state="normal")
     process_text.delete("1.0", "end")
     process_text.config(state="disabled")
+    process_text_disambiguation.config(state="normal")
+    process_text_disambiguation.delete("1.0", "end")
+    process_text_disambiguation.config(state="disabled")
     word_selection_combo["values"] = []
     word_selection_combo.set("")
     sentence_input_field.focus()
