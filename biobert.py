@@ -3,7 +3,6 @@ from transformers import AutoTokenizer, AutoModel
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.corpus import wordnet as wn
-from nltk import pos_tag, word_tokenize
 
 
 def load_model(model_name="dmis-lab/biobert-v1.1", fp16=True, device=None):
@@ -85,7 +84,7 @@ def get_isolated_embed(
 
 def compare_embeds(target_word: str, sents: list[str], tokenizer, model, device):
     # get the synsets for the target word
-    syns = wn.synsets("drug")
+    syns = wn.synsets(target_word)
 
     # embed the word in teh synset definitnon
     syn_embeds = []
@@ -143,7 +142,7 @@ def main():
         "I picked up a drug from the pharmacy.",
         "Fentanyl is used as a recreational drug.",
     ]
-    target_word = "drug"
+    target_word = "bank"
     compare_embeds(target_word, sents, tokenizer, model, device)
 
 
