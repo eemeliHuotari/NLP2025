@@ -1,5 +1,4 @@
 """
-Exercise 5:
 1) Phonetic distance matrix for a sentence using fuzzy (Soundex/DMetaphone) + edit distance
 2) A Lesk-style disambiguator that combines Wu-Palmer semantic similarity and phonetic similarity
    via a convex combination: 0.5 * wup + 0.5 * phonetic_sim (both normalized to [0,1])
@@ -9,7 +8,7 @@ Demo uses the sentence:
 Target word: "drug" (or "drugs")
 
 Usage:
-  python exc5.py
+  python task_5.py
 """
 
 import re
